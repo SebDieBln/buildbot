@@ -29,21 +29,21 @@ class SecretInAFile(SecretProviderBase):
     """
     name = "SecretInAFile"
 
-    def checkFileIsReadOnly(self, dirname, secretfile):
+    def checkFilePermissions(self, dirname, secretfile, maxpermissions):
         filepath = os.path.join(dirname, secretfile)
         obs_stat = stat.S_IMODE(os.stat(filepath).st_mode)
-        if (obs_stat & 0o77) != 0 and os.name == "posix":
+        if (obs_stat & ~maxpermissions) != 0 and os.name == "posix":
             config.error(f"Permissions {oct(obs_stat)} on file {secretfile} are too open."
-                         " It is required that your secret files are NOT"
-                         " accessible by others!")
+                         " It is required that your secret files are at least restricted"
+                         f" to {oct(maxpermissions)}!")
 
-    def checkSecretDirectoryIsAvailableAndReadable(self, dirname, suffixes):
+    def checkSecretDirectoryIsAvailableAndReadable(self, dirname, suffixes, maxpermissions):
         if not os.access(dirname, os.F_OK):
             config.error(f"directory {dirname} does not exists")
         for secretfile in os.listdir(dirname):
             for suffix in suffixes:
                 if secretfile.endswith(suffix):
-                    self.checkFileIsReadOnly(dirname, secretfile)
+                    self.checkFilePermissions(dirname, secretfile, maxpermissions)
 
     def loadSecrets(self, dirname, suffixes, strip):
         secrets = {}
@@ -60,12 +60,13 @@ class SecretInAFile(SecretProviderBase):
                     secrets[secretfile] = secretvalue
         return secrets
 
-    def checkConfig(self, dirname, suffixes=None, strip=True):
+    def checkConfig(self, dirname, suffixes=None, strip=True, maxpermissions=0o700):
         self._dirname = dirname
         if suffixes is None:
             suffixes = [""]
         self.checkSecretDirectoryIsAvailableAndReadable(dirname,
-                                                        suffixes=suffixes)
+                                                        suffixes=suffixes,
+                                                        maxpermissions=maxpermissions)
 
     def reconfigService(self, dirname, suffixes=None, strip=True):
         self._dirname = dirname

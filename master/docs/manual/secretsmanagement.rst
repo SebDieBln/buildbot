@@ -115,6 +115,9 @@ Arguments:
 ``strip``
   (optional) if ``True`` (the default), trailing newlines are removed from the file contents.
 
+``maxpermissions``
+  (optional) The maximum allowed permissions of a secret file. Defaults to ``0o700``.
+
 .. _HashiCorpVaultKvSecretProvider:
 
 HashiCorpVaultKvSecretProvider
